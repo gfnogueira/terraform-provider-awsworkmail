@@ -1,0 +1,16 @@
+namespace: gfnogueira
+type: provider
+name: awsworkmail
+
+description: |
+  Terraform provider to manage AWS WorkMail resources such as organizations, users, and groups. 
+  Includes support for domain validation with Route53 records.
+
+keywords:
+  - aws
+  - workmail
+  - email
+  - dns
+  - route53
+  - messaging
+  - identity

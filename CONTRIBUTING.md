@@ -1,26 +1,30 @@
-# Contributing Guide
+# Contributing to terraform-provider-awsworkmail
 
-Thank you for considering contributing to the `terraform-provider-awsworkmail`!
+Thank you for your interest in contributing to `terraform-provider-awsworkmail`!  
+We welcome community contributions to improve the project.
 
 ## How to contribute
 
-- Fork the repository
-- Create a new branch (`git checkout -b feature/my-feature`)
-- Make your changes
-- Commit your changes (`git commit -am 'Add some feature'`)
-- Push to the branch (`git push origin feature/my-feature`)
-- Create a new Pull Request
+1. Fork this repository
+2. Create a new branch (`git checkout -b feature/my-feature`)
+3. Make your changes
+4. Commit your changes (`git commit -am 'Add some feature'`)
+5. Push the branch (`git push origin feature/my-feature`)
+6. Open a Pull Request
 
 ## Code Style
 
-We follow standard Go formatting and linting tools:
-- `gofmt`
-- `golangci-lint`
+We follow standard Go formatting and linting:
 
-Run tests with:
+- `gofmt`
+- [`golangci-lint`](https://golangci-lint.run)
+
+### Run tests
+
 ```bash
 make test
 ```
+---
 
 ## Requirements
 
@@ -53,7 +57,8 @@ Unit tests and static analysis do not require AWS credentials.
 
 ## Release Process
 
-For each new release:
+To release a new version:
+
 1. Update the `CHANGELOG.md` with a summary of changes for the new version.
 2. Commit your changes to the main branch.
 3. Create and push a new semantic version tag (e.g., `v0.2.0`).
@@ -61,7 +66,9 @@ For each new release:
    git tag v0.2.0
    git push origin v0.2.0
    ```
-4. The release workflow will run automatically, sign the release, and publish it to GitHub and the Terraform Registry.
+4. The release workflow (CI) will:   
+    - Build and sign the binaries  
+    - Publish to GitHub Releases and the [Terraform Registry](https://registry.terraform.io/)    
 
 ## License
 

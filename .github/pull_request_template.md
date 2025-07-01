@@ -1,16 +1,39 @@
 ## Related Issue
 
-Fixes # <!-- INSERT ISSUE NUMBER -->
+Fixes # <!-- INSERT ISSUE NUMBER, or describe the related issue/feature -->
 
 ## Description
 
-In plain English, describe your approach to addressing the issue linked above. For example, if you made a particular design decision, let us know why you chose this path instead of another solution.
+Briefly describe your changes and the motivation behind them. If you made specific design decisions, explain your reasoning.
 
-<!-- heimdall_github_prtemplate:grc-pci_dss-2024-01-05 -->
+## Type of Change
+
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+- [ ] Refactor/tech debt
+
+## Checklist
+
+- [ ] I have tested these changes locally
+- [ ] Documentation updated (if needed)
+- [ ] Code is linted and formatted
+- [ ] All acceptance tests pass
+- [ ] I have added/updated tests as needed
+
 ## Rollback Plan
 
-- [ ] If a change needs to be reverted, we will roll out an update to the code within 7 days.
+<!-- Describe how to revert this change if needed, or confirm that a rollback is straightforward. -->
 
 ## Changes to Security Controls
 
-Are there any changes to security controls (access controls, encryption, logging) in this pull request? If so, explain.
+Are there any changes to security controls (access controls, encryption, logging) in this pull request?  
+- [ ] No
+- [ ] Yes (please explain below)
+
+<!-- If yes, explain the changes: -->
+
+## Screenshots (if applicable)
+
+<!-- Add screenshots to help explain your changes, if relevant. -->

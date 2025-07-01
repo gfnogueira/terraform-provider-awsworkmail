@@ -1,4 +1,8 @@
 # Terraform Provider AWS WorkMail
+📦 Available at: [Terraform Registry](https://registry.terraform.io/providers/gfnogueira/awsworkmail/latest)
+
+🔧 **Terraform provider to manage AWS WorkMail**, email users, and groups — with optional Route53 DNS setup.  
+🔎 _Keywords: `aws`, `workmail`, `email`, `dns`, `route53`, `messaging`, `identity`_
 
 This provider allows you to manage AWS WorkMail resources via Terraform.
 

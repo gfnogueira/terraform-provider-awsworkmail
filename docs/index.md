@@ -91,5 +91,5 @@ You can import existing resources using the following commands:
 ## More Information
 
 - [GitHub Repository](https://github.com/gfnogueira/terraform-provider-awsworkmail)
-- [Contributing Guide](../CONTRIBUTING.md)
+- [Contributing Guide](https://github.com/gfnogueira/terraform-provider-awsworkmail/blob/main/CONTRIBUTING.md)
 - [Report Issues](https://github.com/gfnogueira/terraform-provider-awsworkmail/issues)
