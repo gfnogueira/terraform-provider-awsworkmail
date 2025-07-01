@@ -9,7 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
-	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	pschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -36,9 +36,9 @@ func (p *AwsWorkMailProvider) Metadata(ctx context.Context, req provider.Metadat
 }
 
 func (p *AwsWorkMailProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		Attributes: map[string]schema.Attribute{
-			"endpoint": schema.StringAttribute{
+	resp.Schema = pschema.Schema{
+		Attributes: map[string]pschema.Attribute{
+			"endpoint": pschema.StringAttribute{
 				MarkdownDescription: "Example provider attribute",
 				Optional:            true,
 			},
@@ -74,7 +74,9 @@ func (p *AwsWorkMailProvider) Resources(ctx context.Context) []func() resource.R
 }
 
 func (p *AwsWorkMailProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return nil // No data sources
+	return []func() datasource.DataSource{
+		NewUserDataSource, // Register the new user data source
+	}
 }
 
 func New(version string) func() provider.Provider {
