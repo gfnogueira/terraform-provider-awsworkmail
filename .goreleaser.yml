@@ -1,0 +1,46 @@
+builds:
+  - env:
+      - CGO_ENABLED=0
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags: ["-trimpath"]
+    ldflags:
+      - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}}'
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    binary: terraform-provider-awsworkmail
+
+archives:
+  - format: zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    wrap_in_directory: false
+    files:
+      - LICENSE
+
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
+  algorithm: sha256
+
+signs:
+  - artifacts: checksum
+    args:
+      - "--batch"
+      - "--yes"
+      - "--pinentry-mode"
+      - "loopback"
+      - "--passphrase"
+      - "${GPG_PASSPHRASE}"
+      - "--local-user={{ .Env.GPG_FINGERPRINT }}"
+      - "--detach-sign"
+      - "--output"
+      - "${signature}"
+      - "${artifact}"
+release:
+  draft: false  # ⚠️ true if you want to review on GitHub before publishing
+
+changelog:
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - Merge pull request
+      - Merge branch
