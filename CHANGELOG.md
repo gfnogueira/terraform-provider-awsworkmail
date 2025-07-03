@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.8] - 2025-07-03
+### Added
+- `enabled` attribute for `awsworkmail_user` and `awsworkmail_group` resources, supporting enable/disable via AWS API.
+- `first_name` and `last_name` attributes for `awsworkmail_user` resource.
+- Improved documentation and usage examples for all new attributes.
+
+### Changed
+- Import and refresh for `awsworkmail_organization` now look up by OrganizationId, supporting correct import and state refresh.
+- Provider now uses robust ImportState logic for all resources, including composite ID parsing.
+- Provider never overwrites resource IDs with empty values and always falls back to state if needed.
+
+### Fixed
+- Improved error handling for AWS WorkMail `EntityStateException`, with clear diagnostics for unsupported state transitions.
+- Cleaned up all unused imports and fixed linter warnings.
+- Removed redundant `ignore_changes` lifecycle warnings in documentation and examples.
+- All code comments, logs, and documentation are now in English for global use.
+
 ## [0.1.7] - 2025-07-03
 ### Fixed
 - Improved import support for `awsworkmail_user`, `awsworkmail_group`, and `awsworkmail_domain` resources. Import now requires a composite ID in the format `<organization_id>,<resource_id>`, ensuring both required attributes are set in state. This fixes issues with importing resources that require both organization and resource IDs.

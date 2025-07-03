@@ -28,6 +28,7 @@ type groupResourceModel struct {
 	Name           types.String   `tfsdk:"name"`
 	Email          types.String   `tfsdk:"email"`
 	Members        []types.String `tfsdk:"members"`
+	Enabled        types.Bool     `tfsdk:"enabled"`
 }
 
 func (r *groupResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -58,6 +59,11 @@ func (r *groupResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Optional:            true,
 				MarkdownDescription: "List of user IDs to be members of the group.",
 			},
+			"enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Whether the group is enabled in WorkMail.",
+			},
 		},
 	}
 }
@@ -68,7 +74,6 @@ func (r *groupResource) Create(ctx context.Context, req resource.CreateRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("AWS Config Error", err.Error())
@@ -86,6 +91,23 @@ func (r *groupResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 	data.ID = types.StringValue(*out.GroupId)
+
+	// Enable group if enabled=true (default: true)
+	enabled := true
+	if !data.Enabled.IsNull() {
+		enabled = data.Enabled.ValueBool()
+	}
+	if enabled {
+		_, err := client.RegisterToWorkMail(ctx, &workmail.RegisterToWorkMailInput{
+			OrganizationId: aws.String(data.OrganizationID.ValueString()),
+			EntityId:       aws.String(data.ID.ValueString()),
+			Email:          aws.String(data.Email.ValueString()),
+		})
+		if err != nil {
+			resp.Diagnostics.AddError("Error enabling WorkMail group", err.Error())
+			return
+		}
+	}
 
 	// Add members if provided
 	for _, member := range data.Members {
@@ -151,6 +173,9 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	if out != nil && out.Email != nil {
 		data.Email = types.StringValue(*out.Email)
 	}
+	if out != nil && out.State != "" {
+		data.Enabled = types.BoolValue(out.State == "ENABLED")
+	}
 
 	// Read group members
 	members := []types.String{}
@@ -174,6 +199,12 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 func (r *groupResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data groupResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	// Fallback: if id did not come from the plan, get it from the state
+	if data.ID.IsNull() || data.ID.ValueString() == "" {
+		var stateData groupResourceModel
+		resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
+		data.ID = stateData.ID
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -183,6 +214,35 @@ func (r *groupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 	client := workmail.NewFromConfig(cfg)
+	// Enable/disable group if needed
+	enabled := true
+	if !data.Enabled.IsNull() {
+		enabled = data.Enabled.ValueBool()
+	}
+	if data.ID.IsNull() || data.ID.ValueString() == "" {
+		resp.Diagnostics.AddError("WorkMail group ID is missing", "The group id field is empty. This can occur after manual import. Please check if the resource was imported correctly and the state is healthy.")
+		return
+	}
+	if enabled {
+		_, err := client.RegisterToWorkMail(ctx, &workmail.RegisterToWorkMailInput{
+			OrganizationId: aws.String(data.OrganizationID.ValueString()),
+			EntityId:       aws.String(data.ID.ValueString()),
+			Email:          aws.String(data.Email.ValueString()),
+		})
+		if err != nil {
+			resp.Diagnostics.AddError("Error enabling WorkMail group", err.Error())
+			return
+		}
+	} else {
+		_, err := client.DeregisterFromWorkMail(ctx, &workmail.DeregisterFromWorkMailInput{
+			OrganizationId: aws.String(data.OrganizationID.ValueString()),
+			EntityId:       aws.String(data.ID.ValueString()),
+		})
+		if err != nil {
+			resp.Diagnostics.AddError("Error disabling WorkMail group", err.Error())
+			return
+		}
+	}
 
 	// Update group name is not supported by AWS, so only manage members
 	// Get current members
