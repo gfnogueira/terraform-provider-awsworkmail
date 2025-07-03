@@ -26,8 +26,11 @@ type userResourceModel struct {
 	OrganizationID types.String `tfsdk:"organization_id"`
 	Name           types.String `tfsdk:"name"`
 	DisplayName    types.String `tfsdk:"display_name"`
+	FirstName      types.String `tfsdk:"first_name"`
+	LastName       types.String `tfsdk:"last_name"`
 	Password       types.String `tfsdk:"password"`
 	Email          types.String `tfsdk:"email"`
+	Enabled        types.Bool   `tfsdk:"enabled"`
 }
 
 func (r *userResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -62,8 +65,25 @@ func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Optional:            true,
 				MarkdownDescription: "Primary email address for the user (optional, can be set after creation)",
 			},
+			"enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Whether the user is enabled in WorkMail.",
+			},
+			"first_name": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "First name of the user (optional)",
+			},
+			"last_name": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Last name of the user (optional)",
+			},
 		},
 	}
+}
+
+func isEntityStateException(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "EntityStateException")
 }
 
 func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -72,7 +92,6 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("AWS Config Error", err.Error())
@@ -86,12 +105,43 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 		DisplayName:    aws.String(data.DisplayName.ValueString()),
 		Password:       aws.String(data.Password.ValueString()),
 	}
+	if !data.FirstName.IsNull() && data.FirstName.ValueString() != "" {
+		input.FirstName = aws.String(data.FirstName.ValueString())
+	}
+	if !data.LastName.IsNull() && data.LastName.ValueString() != "" {
+		input.LastName = aws.String(data.LastName.ValueString())
+	}
 	out, err := client.CreateUser(ctx, input)
 	if err != nil {
+		if isEntityStateException(err) {
+			resp.Diagnostics.AddError(
+				"WorkMail user cannot be created due to entity state",
+				"AWS returned EntityStateException. This usually means the user is in a state that does not allow creation or update. Please check if the user already exists, is enabled, or is registered to WorkMail. If the problem persists, try deleting and recreating the user in the AWS Console.\n\nOriginal error: "+err.Error(),
+			)
+			return
+		}
 		resp.Diagnostics.AddError("Error creating WorkMail user", err.Error())
 		return
 	}
 	data.ID = types.StringValue(*out.UserId)
+
+	// Enable or disable user if needed
+	enabled := true
+	if !data.Enabled.IsNull() {
+		enabled = data.Enabled.ValueBool()
+	}
+	if enabled {
+		_, _ = client.RegisterToWorkMail(ctx, &workmail.RegisterToWorkMailInput{
+			OrganizationId: aws.String(data.OrganizationID.ValueString()),
+			EntityId:       aws.String(data.ID.ValueString()),
+			Email:          aws.String(data.Email.ValueString()),
+		})
+	} else {
+		_, _ = client.DeregisterFromWorkMail(ctx, &workmail.DeregisterFromWorkMailInput{
+			OrganizationId: aws.String(data.OrganizationID.ValueString()),
+			EntityId:       aws.String(data.ID.ValueString()),
+		})
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -119,7 +169,7 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		resp.Diagnostics.AddError("Error reading WorkMail user", err.Error())
 		return
 	}
-	if out != nil && out.UserId != nil {
+	if out != nil && out.UserId != nil && *out.UserId != "" {
 		data.ID = types.StringValue(*out.UserId)
 	}
 	if out != nil && out.Name != nil {
@@ -131,12 +181,26 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	if out != nil && out.Email != nil {
 		data.Email = types.StringValue(*out.Email)
 	}
+	if out != nil && out.State != "" {
+		data.Enabled = types.BoolValue(out.State == "ENABLED")
+	}
+	if out != nil && out.FirstName != nil {
+		data.FirstName = types.StringValue(*out.FirstName)
+	}
+	if out != nil && out.LastName != nil {
+		data.LastName = types.StringValue(*out.LastName)
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data userResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	if data.ID.IsNull() || data.ID.ValueString() == "" {
+		var stateData userResourceModel
+		resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
+		data.ID = stateData.ID
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -148,14 +212,30 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 	client := workmail.NewFromConfig(cfg)
 
-	if !data.DisplayName.IsNull() {
-		_, err := client.UpdateUser(ctx, &workmail.UpdateUserInput{
+	if !data.DisplayName.IsNull() || !data.FirstName.IsNull() || !data.LastName.IsNull() {
+		updateInput := &workmail.UpdateUserInput{
 			OrganizationId: aws.String(data.OrganizationID.ValueString()),
 			UserId:         aws.String(data.ID.ValueString()),
-			DisplayName:    aws.String(data.DisplayName.ValueString()),
-		})
+		}
+		if !data.DisplayName.IsNull() {
+			updateInput.DisplayName = aws.String(data.DisplayName.ValueString())
+		}
+		if !data.FirstName.IsNull() {
+			updateInput.FirstName = aws.String(data.FirstName.ValueString())
+		}
+		if !data.LastName.IsNull() {
+			updateInput.LastName = aws.String(data.LastName.ValueString())
+		}
+		_, err := client.UpdateUser(ctx, updateInput)
 		if err != nil {
-			resp.Diagnostics.AddError("Error updating WorkMail user display name", err.Error())
+			if isEntityStateException(err) {
+				resp.Diagnostics.AddError(
+					"WorkMail user cannot be updated due to entity state",
+					"AWS returned EntityStateException. This usually means the user is in a state that does not allow updates (e.g., not enabled, not registered, or disabled). Please check the user's state in the AWS Console. If the user is stuck, try deleting and recreating the user.\n\nOriginal error: "+err.Error(),
+				)
+				return
+			}
+			resp.Diagnostics.AddError("Error updating WorkMail user attributes", err.Error())
 			return
 		}
 	}
@@ -169,6 +249,23 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			resp.Diagnostics.AddError("Error resetting WorkMail user password", err.Error())
 			return
 		}
+	}
+	// Enable or disable user if needed
+	enabled := true
+	if !data.Enabled.IsNull() {
+		enabled = data.Enabled.ValueBool()
+	}
+	if enabled {
+		_, _ = client.RegisterToWorkMail(ctx, &workmail.RegisterToWorkMailInput{
+			OrganizationId: aws.String(data.OrganizationID.ValueString()),
+			EntityId:       aws.String(data.ID.ValueString()),
+			Email:          aws.String(data.Email.ValueString()),
+		})
+	} else {
+		_, _ = client.DeregisterFromWorkMail(ctx, &workmail.DeregisterFromWorkMailInput{
+			OrganizationId: aws.String(data.OrganizationID.ValueString()),
+			EntityId:       aws.String(data.ID.ValueString()),
+		})
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

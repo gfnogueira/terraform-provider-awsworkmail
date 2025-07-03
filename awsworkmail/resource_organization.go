@@ -99,7 +99,7 @@ active:
 	resp.Diagnostics.Append(diags...)
 }
 
-// Read fetches the organization by alias and ensures the ID is always set in state.
+// Read fetches the organization by ID and ensures the ID and alias are always set in state.
 func (r *organizationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data organizationResourceModel
 	diags := req.State.Get(ctx, &data)
@@ -115,15 +115,18 @@ func (r *organizationResource) Read(ctx context.Context, req resource.ReadReques
 	}
 	client := workmail.NewFromConfig(cfg)
 
-	alias := data.Alias.ValueString()
+	orgID := data.ID.ValueString()
 	listOut, err := client.ListOrganizations(ctx, &workmail.ListOrganizationsInput{})
 	if err != nil {
 		resp.Diagnostics.AddError("Error listing WorkMail organizations", err.Error())
 		return
 	}
 	for _, org := range listOut.OrganizationSummaries {
-		if org.Alias != nil && *org.Alias == alias {
+		if org.OrganizationId != nil && *org.OrganizationId == orgID {
 			data.ID = types.StringValue(*org.OrganizationId)
+			if org.Alias != nil {
+				data.Alias = types.StringValue(*org.Alias)
+			}
 			resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 			return
 		}

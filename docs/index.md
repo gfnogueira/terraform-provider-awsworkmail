@@ -58,26 +58,28 @@ resource "awsworkmail_domain" "example" {
 }
 ```
 
-## Import
+## Importing Existing Resources
 
-You can import existing resources using the following commands:
+To import existing AWS WorkMail resources, you must provide both the Organization ID and the resource ID (or domain), separated by a comma:
 
-- Organization:
+- **User:**
   ```
-  terraform import awsworkmail_organization.example m-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  terraform import awsworkmail_user.example <organization_id>,<user_id>
   ```
-- User:
+- **Group:**
   ```
-  terraform import awsworkmail_user.example <user-id>
+  terraform import awsworkmail_group.example <organization_id>,<group_id>
   ```
-- Group:
+- **Domain:**
   ```
-  terraform import awsworkmail_group.example <group-id>
+  terraform import awsworkmail_domain.example <organization_id>,<domain>
   ```
-- Domain (stub, for documentation only):
+- **Organization:**
   ```
-  terraform import awsworkmail_domain.example mycompany.com
+  terraform import awsworkmail_organization.example <organization_id>
   ```
+
+See each resource's documentation for details and examples.
 
 ## Limitations
 
