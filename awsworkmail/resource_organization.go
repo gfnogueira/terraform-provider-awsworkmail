@@ -99,11 +99,37 @@ active:
 	resp.Diagnostics.Append(diags...)
 }
 
-// Read is a no-op because WorkMail API lacks a proper describe call by alias.
+// Read fetches the organization by alias and ensures the ID is always set in state.
 func (r *organizationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data organizationResourceModel
 	diags := req.State.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError("AWS Config Error", err.Error())
+		return
+	}
+	client := workmail.NewFromConfig(cfg)
+
+	alias := data.Alias.ValueString()
+	listOut, err := client.ListOrganizations(ctx, &workmail.ListOrganizationsInput{})
+	if err != nil {
+		resp.Diagnostics.AddError("Error listing WorkMail organizations", err.Error())
+		return
+	}
+	for _, org := range listOut.OrganizationSummaries {
+		if org.Alias != nil && *org.Alias == alias {
+			data.ID = types.StringValue(*org.OrganizationId)
+			resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+			return
+		}
+	}
+	// If not found, mark resource as gone
+	resp.State.RemoveResource(ctx)
 }
 
 // Update is a no-op because WorkMail does not support updating alias.

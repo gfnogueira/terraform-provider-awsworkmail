@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2025-07-03
+### Fixed
+- Fixed a bug where the `awsworkmail_organization` resource did not repopulate the `id` attribute in state after a refresh. The Read method now looks up the organization by alias and ensures the ID is always set, improving compatibility with outputs and dependent resources.
+
 ## [Unreleased]
 - Work in progress
 
