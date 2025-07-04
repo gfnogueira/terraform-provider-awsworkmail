@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.9] - 2025-07-03
+### Changed
+- Changed the `members` attribute of `awsworkmail_group` from a List to a Set to prevent configuration drift due to member order.
+- Provider now ensures group members are always unique and sorted before saving to state, eliminating repeated updates when the order changes in configuration or AWS response.
+- Updated documentation to reflect that `members` is now a Set.
+
+### Fixed
+- Resolved persistent drift when managing group membership, regardless of the order in the Terraform configuration.
+
 ## [0.1.8] - 2025-07-03
 ### Added
 - `enabled` attribute for `awsworkmail_user` and `awsworkmail_group` resources, supporting enable/disable via AWS API.

@@ -2,6 +2,7 @@ package awsworkmail
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"time"
 
@@ -54,10 +55,10 @@ func (r *groupResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Optional:            true,
 				MarkdownDescription: "Primary email address for the group (optional, can be set after creation)",
 			},
-			"members": schema.ListAttribute{
+			"members": schema.SetAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
-				MarkdownDescription: "List of user IDs to be members of the group.",
+				MarkdownDescription: "Set of user IDs to be members of the group.",
 			},
 			"enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -185,13 +186,26 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 	listOut, err := client.ListGroupMembers(ctx, listInput)
 	if err == nil {
+		unique := map[string]struct{}{}
 		for _, m := range listOut.Members {
 			if m.Id != nil {
-				members = append(members, types.StringValue(*m.Id))
+				unique[*m.Id] = struct{}{}
 			}
 		}
+		// Sort members to ensure consistent ordering in state
+		sorted := make([]string, 0, len(unique))
+		for id := range unique {
+			sorted = append(sorted, id)
+		}
+		sort.Strings(sorted)
+		membersSorted := make([]types.String, len(sorted))
+		for i, v := range sorted {
+			membersSorted[i] = types.StringValue(v)
+		}
+		data.Members = membersSorted
+	} else {
+		data.Members = members
 	}
-	data.Members = members
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
