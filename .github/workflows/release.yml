@@ -38,7 +38,7 @@ jobs:
               --passphrase-fd 0 \
               --export-secret-keys > /dev/null
 
-      - uses: goreleaser/goreleaser-action@v5
+      - uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           args: release --clean
