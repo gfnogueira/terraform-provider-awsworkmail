@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+## [0.2.0] - 2025-08-09
+
+### Added
+- Provider-level `region` configuration support for multi-region deployments (#9)
+- Full implementation of `awsworkmail_domain` resource with real AWS WorkMail domain management
+- Automatic MX record generation for registered domains
+- Data source `awsworkmail_user` now uses provider-shared AWS configuration
+
+### Changed
+- **BREAKING**: All resources now use centralized AWS configuration from provider instead of individual configs
+- Provider `region` attribute is optional and maintains backward compatibility with environment variables
+- Domain resource is no longer a stub - now provides full create/read/delete functionality using AWS WorkMail APIs
+
+### Fixed
+- Resolved "Missing Region if not provided by env var" error when AWS_REGION environment variable is not set
+- Fixed domain resource returning no state after creation
+- Eliminated individual AWS config creation in each resource, improving consistency and performance
+
+### Technical Changes
+- All resources (`awsworkmail_organization`, `awsworkmail_user`, `awsworkmail_group`, `awsworkmail_domain`) now implement `Configure` method
+- Centralized AWS configuration sharing between provider and all resources/data sources
+- Added proper error handling for missing provider configuration in resources
+
 ## [0.1.9] - 2025-07-03
 ### Changed
 - Changed the `members` attribute of `awsworkmail_group` from a List to a Set to prevent configuration drift due to member order.

@@ -2,9 +2,9 @@ package awsworkmail
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/workmail"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -15,7 +15,9 @@ import (
 var _ datasource.DataSource = &userDataSource{}
 
 // userDataSource is the data source implementation.
-type userDataSource struct{}
+type userDataSource struct {
+	cfg aws.Config
+}
 
 func NewUserDataSource() datasource.DataSource {
 	return &userDataSource{}
@@ -53,6 +55,23 @@ func (d *userDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 	}
 }
 
+func (d *userDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	cfg, ok := req.ProviderData.(aws.Config)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected aws.Config, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+		return
+	}
+
+	d.cfg = cfg
+}
+
 func (d *userDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data struct {
 		OrganizationId types.String `tfsdk:"organization_id"`
@@ -68,12 +87,7 @@ func (d *userDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
+	client := workmail.NewFromConfig(d.cfg)
 
 	input := &workmail.DescribeUserInput{
 		OrganizationId: aws.String(data.OrganizationId.ValueString()),

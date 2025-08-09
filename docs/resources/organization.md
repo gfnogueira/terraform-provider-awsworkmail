@@ -23,7 +23,7 @@ resource "awsworkmail_organization" "example" {
 You can import an existing WorkMail organization by its AWS OrganizationId:
 
 ```
-terraform import awsworkmail_organization.example <organization_id>
+terraform import awsworkmail_organization.example '<organization_id>'
 ```
 
 Example:

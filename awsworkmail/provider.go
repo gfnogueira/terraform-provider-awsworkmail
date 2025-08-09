@@ -5,8 +5,9 @@ package awsworkmail
 
 import (
 	"context"
-	"net/http"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	pschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -28,6 +29,7 @@ type AwsWorkMailProvider struct {
 // AwsWorkMailProviderModel describes the provider data model.
 type AwsWorkMailProviderModel struct {
 	Endpoint types.String `tfsdk:"endpoint"`
+	Region   types.String `tfsdk:"region"`
 }
 
 func (p *AwsWorkMailProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -40,6 +42,10 @@ func (p *AwsWorkMailProvider) Schema(ctx context.Context, req provider.SchemaReq
 		Attributes: map[string]pschema.Attribute{
 			"endpoint": pschema.StringAttribute{
 				MarkdownDescription: "Example provider attribute",
+				Optional:            true,
+			},
+			"region": pschema.StringAttribute{
+				MarkdownDescription: "AWS region for WorkMail operations. If not specified, uses the standard AWS SDK configuration (environment variables, ~/.aws/config, etc.). WorkMail is only available in select regions.",
 				Optional:            true,
 			},
 		},
@@ -55,13 +61,24 @@ func (p *AwsWorkMailProvider) Configure(ctx context.Context, req provider.Config
 		return
 	}
 
-	// Configuration values are now available.
-	// if data.Endpoint.IsNull() { /* ... */ }
+	// Create AWS config with optional region override
+	var cfg aws.Config
+	var err error
 
-	// Example client configuration for data sources and resources
-	client := http.DefaultClient
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	if !data.Region.IsNull() && data.Region.ValueString() != "" {
+		cfg, err = config.LoadDefaultConfig(ctx, config.WithRegion(data.Region.ValueString()))
+	} else {
+		cfg, err = config.LoadDefaultConfig(ctx)
+	}
+
+	if err != nil {
+		resp.Diagnostics.AddError("AWS Configuration Error", "Failed to load AWS configuration: "+err.Error())
+		return
+	}
+
+	// Pass AWS config to resources and data sources
+	resp.DataSourceData = cfg
+	resp.ResourceData = cfg
 }
 
 func (p *AwsWorkMailProvider) Resources(ctx context.Context) []func() resource.Resource {

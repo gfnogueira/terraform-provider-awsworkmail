@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/workmail"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -12,7 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type organizationResource struct{}
+type organizationResource struct {
+	cfg aws.Config
+}
 
 // NewOrganizationResource returns a new WorkMail organization resource.
 func NewOrganizationResource() resource.Resource {
@@ -27,6 +29,21 @@ type organizationResourceModel struct {
 // Metadata sets the resource type name.
 func (r *organizationResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_organization"
+}
+
+// Configure stores the provider configuration in the resource.
+func (r *organizationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	cfg, ok := req.ProviderData.(aws.Config)
+	if !ok {
+		resp.Diagnostics.AddError("Unexpected Resource Configure Type", "Expected aws.Config, got something else. Please report this issue to the provider developers.")
+		return
+	}
+
+	r.cfg = cfg
 }
 
 // Schema defines the schema for the resource.
@@ -55,13 +72,7 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-
-	client := workmail.NewFromConfig(cfg)
+	client := workmail.NewFromConfig(r.cfg)
 
 	alias := data.Alias.ValueString()
 
@@ -108,12 +119,7 @@ func (r *organizationResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
+	client := workmail.NewFromConfig(r.cfg)
 
 	orgID := data.ID.ValueString()
 	listOut, err := client.ListOrganizations(ctx, &workmail.ListOrganizationsInput{})
@@ -154,17 +160,11 @@ func (r *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-
-	client := workmail.NewFromConfig(cfg)
+	client := workmail.NewFromConfig(r.cfg)
 
 	orgID := data.ID.ValueString()
 
-	_, err = client.DeleteOrganization(ctx, &workmail.DeleteOrganizationInput{
+	_, err := client.DeleteOrganization(ctx, &workmail.DeleteOrganizationInput{
 		OrganizationId: &orgID,
 	})
 	if err != nil {
