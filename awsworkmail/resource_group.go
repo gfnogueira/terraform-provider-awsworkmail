@@ -2,12 +2,12 @@ package awsworkmail
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/workmail"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -17,7 +17,9 @@ import (
 
 // awsworkmail_group resource: manages a group in a WorkMail organization
 
-type groupResource struct{}
+type groupResource struct {
+	cfg aws.Config
+}
 
 func NewGroupResource() resource.Resource {
 	return &groupResource{}
@@ -69,18 +71,31 @@ func (r *groupResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 	}
 }
 
+func (r *groupResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	cfg, ok := req.ProviderData.(aws.Config)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected aws.Config, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+		return
+	}
+
+	r.cfg = cfg
+}
+
 func (r *groupResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data groupResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
+
+	client := workmail.NewFromConfig(r.cfg)
 
 	input := &workmail.CreateGroupInput{
 		OrganizationId: aws.String(data.OrganizationID.ValueString()),
@@ -149,12 +164,7 @@ func (r *groupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
+	client := workmail.NewFromConfig(r.cfg)
 
 	input := &workmail.DescribeGroupInput{
 		OrganizationId: aws.String(data.OrganizationID.ValueString()),
@@ -222,12 +232,8 @@ func (r *groupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
+
+	client := workmail.NewFromConfig(r.cfg)
 	// Enable/disable group if needed
 	enabled := true
 	if !data.Enabled.IsNull() {
@@ -330,13 +336,9 @@ func (r *groupResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
-	_, err = client.DeleteGroup(ctx, &workmail.DeleteGroupInput{
+
+	client := workmail.NewFromConfig(r.cfg)
+	_, err := client.DeleteGroup(ctx, &workmail.DeleteGroupInput{
 		OrganizationId: aws.String(data.OrganizationID.ValueString()),
 		GroupId:        aws.String(data.ID.ValueString()),
 	})

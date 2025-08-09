@@ -64,19 +64,19 @@ To import existing AWS WorkMail resources, you must provide both the Organizatio
 
 - **User:**
   ```
-  terraform import awsworkmail_user.example <organization_id>,<user_id>
+  terraform import awsworkmail_user.example '<organization_id>','<user_id>'
   ```
 - **Group:**
   ```
-  terraform import awsworkmail_group.example <organization_id>,<group_id>
+  terraform import awsworkmail_group.example '<organization_id>','<group_id>'
   ```
 - **Domain:**
   ```
-  terraform import awsworkmail_domain.example <organization_id>,<domain>
+  terraform import awsworkmail_domain.example '<organization_id>','<domain>'
   ```
 - **Organization:**
   ```
-  terraform import awsworkmail_organization.example <organization_id>
+  terraform import awsworkmail_organization.example '<organization_id>'
   ```
 
 See each resource's documentation for details and examples.

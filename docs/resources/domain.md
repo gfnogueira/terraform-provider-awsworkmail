@@ -30,7 +30,7 @@ output "mx_records" {
 You can import a domain resource by providing both the Organization ID and the domain name, separated by a comma:
 
 ```
-terraform import awsworkmail_domain.example <organization_id>,<domain>
+terraform import awsworkmail_domain.example '<organization_id>','<domain>'
 ```
 
 Example:

@@ -2,10 +2,10 @@ package awsworkmail
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/workmail"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -15,7 +15,9 @@ import (
 
 // awsworkmail_user resource: manages a user in a WorkMail organization
 
-type userResource struct{}
+type userResource struct {
+	cfg aws.Config
+}
 
 func NewUserResource() resource.Resource {
 	return &userResource{}
@@ -82,6 +84,23 @@ func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	}
 }
 
+func (r *userResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	cfg, ok := req.ProviderData.(aws.Config)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected aws.Config, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+		return
+	}
+
+	r.cfg = cfg
+}
+
 func isEntityStateException(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "EntityStateException")
 }
@@ -92,12 +111,8 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
+
+	client := workmail.NewFromConfig(r.cfg)
 
 	input := &workmail.CreateUserInput{
 		OrganizationId: aws.String(data.OrganizationID.ValueString()),
@@ -153,12 +168,7 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
+	client := workmail.NewFromConfig(r.cfg)
 
 	input := &workmail.DescribeUserInput{
 		OrganizationId: aws.String(data.OrganizationID.ValueString()),
@@ -205,12 +215,7 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 	// Only display name and password can be updated
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
+	client := workmail.NewFromConfig(r.cfg)
 
 	if !data.DisplayName.IsNull() || !data.FirstName.IsNull() || !data.LastName.IsNull() {
 		updateInput := &workmail.UpdateUserInput{
@@ -276,13 +281,9 @@ func (r *userResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("AWS Config Error", err.Error())
-		return
-	}
-	client := workmail.NewFromConfig(cfg)
-	_, err = client.DeleteUser(ctx, &workmail.DeleteUserInput{
+
+	client := workmail.NewFromConfig(r.cfg)
+	_, err := client.DeleteUser(ctx, &workmail.DeleteUserInput{
 		OrganizationId: aws.String(data.OrganizationID.ValueString()),
 		UserId:         aws.String(data.ID.ValueString()),
 	})
