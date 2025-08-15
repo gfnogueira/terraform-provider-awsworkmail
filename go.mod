@@ -3,7 +3,7 @@ module github.com/gfnogueira/terraform-provider-awsworkmail
 go 1.23.4
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.37.2
+	github.com/aws/aws-sdk-go-v2 v1.38.0
 	github.com/aws/aws-sdk-go-v2/config v1.30.2
 	github.com/aws/aws-sdk-go-v2/service/workmail v1.33.0
 	github.com/hashicorp/terraform-plugin-framework v1.15.1
