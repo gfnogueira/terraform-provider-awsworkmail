@@ -33,8 +33,8 @@ github.com/aws/aws-sdk-go-v2/service/ssooidc v1.34.4 h1:e0XBRn3AptQotkyBFrHAxFB8
 github.com/aws/aws-sdk-go-v2/service/ssooidc v1.34.4/go.mod h1:XclEty74bsGBCr1s0VSaA11hQ4ZidK4viWK7rRfO88I=
 github.com/aws/aws-sdk-go-v2/service/sts v1.38.4 h1:PR00NXRYgY4FWHqOGx3fC3lhVKjsp1GdloDv2ynMSd8=
 github.com/aws/aws-sdk-go-v2/service/sts v1.38.4/go.mod h1:Z+Gd23v97pX9zK97+tX4ppAgqCt3Z2dIXB02CtBncK8=
-github.com/aws/aws-sdk-go-v2/service/workmail v1.35.1 h1:yHTmwYoyqnP87gHeD6MgtLsS/oLwOR455iu1ATzNVaE=
-github.com/aws/aws-sdk-go-v2/service/workmail v1.35.1/go.mod h1:6CKjfL6oQH63mt1VFvewFsu4ySbRsCJ5UvPc/idWWvI=
+github.com/aws/aws-sdk-go-v2/service/workmail v1.36.2 h1:weOe+mOfoNacPyRBWVFe+aMxMVzj+LJjdUYE6piMWmc=
+github.com/aws/aws-sdk-go-v2/service/workmail v1.36.2/go.mod h1:WG/X3d+YF7C+z3pjWyOBRjaMw606gE4lF8GQYtVJ4bQ=
 github.com/aws/smithy-go v1.23.0 h1:8n6I3gXzWJB2DxBDnfxgBaSX6oe0d/t10qGz7OKqMCE=
 github.com/aws/smithy-go v1.23.0/go.mod h1:t1ufH5HMublsJYulve2RKmHDC15xu1f26kHCp/HgceI=
 github.com/bufbuild/protocompile v0.4.0 h1:LbFKd2XowZvQ/kajzguUp2DC9UEIQhIq77fZZlaQsNA=
