@@ -14,24 +14,30 @@ The `awsworkmail` provider enables you to manage [AWS WorkMail](https://aws.amaz
 
 - Create, update, and delete AWS WorkMail organizations
 - Manage users and groups within organizations
-- Import existing organizations, users, and groups
-- Document domain configuration (stub resource, see limitations)
+- Full Domain Management: Register, manage, and get MX records for WorkMail domains
+- Multi-Account Support: Full assume_role functionality for cross-account deployments
+- Import existing organizations, users, groups, and domains
+- Comprehensive error handling and validation
 
 ## Supported Resources
 
 - [`awsworkmail_organization`](./resources/organization.md): Manage WorkMail organizations
 - [`awsworkmail_user`](./resources/user.md): Manage users in a WorkMail organization
 - [`awsworkmail_group`](./resources/group.md): Manage groups in a WorkMail organization
-- [`awsworkmail_domain`](./resources/domain.md): Document domain configuration (stub, manual step required)
+- [`awsworkmail_domain`](./resources/domain.md): Manage domains in a WorkMail organization
 
 ## Data Sources
 
-- _No data sources are currently available._
+- [`awsworkmail_user`](./data-sources/user.md): Retrieve information about a WorkMail user
 
 ## Example Usage
 
+### Basic Usage
+
 ```hcl
-provider "awsworkmail" {}
+provider "awsworkmail" {
+  region = "us-east-1"
+}
 
 resource "awsworkmail_organization" "example" {
   alias = "my-workmail-org"
@@ -51,10 +57,54 @@ resource "awsworkmail_group" "example" {
   members        = [awsworkmail_user.example.id]
 }
 
-# Domain resource is a stub for documentation only
+# Domain resource - fully functional
 resource "awsworkmail_domain" "example" {
   organization_id = awsworkmail_organization.example.id
   domain          = "mycompany.com"
+}
+
+# Use the MX records output for DNS configuration
+output "mx_records" {
+  value = awsworkmail_domain.example.mx_records
+}
+```
+
+### Multi-Account Setup with Assume Role
+
+For multi-account setups where Terraform state is stored in a different account than WorkMail resources:
+
+```hcl
+# Provider configuration for cross-account access
+provider "awsworkmail" {
+  alias  = "target_account"
+  region = "us-east-1"
+  
+  assume_role {
+    role_arn     = "arn:aws:iam::123456789012:role/deployer-role"
+    session_name = "terraform-workmail-session"
+  }
+}
+
+# Use the provider with assumed role
+resource "awsworkmail_organization" "cross_account" {
+  provider = awsworkmail.target_account
+  alias    = "my-cross-account-org"
+}
+```
+
+### Advanced Assume Role Configuration
+
+```hcl
+provider "awsworkmail" {
+  alias  = "advanced_target"
+  region = "us-west-2"
+  
+  assume_role {
+    role_arn         = "arn:aws:iam::987654321098:role/workmail-admin-role"
+    session_name     = "terraform-advanced-session"
+    external_id      = "unique-external-id-123"
+    duration_seconds = 3600  # 1 hour (900-43200 seconds allowed)
+  }
 }
 ```
 
@@ -64,27 +114,47 @@ To import existing AWS WorkMail resources, you must provide both the Organizatio
 
 - **User:**
   ```
-  terraform import awsworkmail_user.example '<organization_id>','<user_id>'
+  terraform import awsworkmail_user.example organization_id,user_id
   ```
 - **Group:**
   ```
-  terraform import awsworkmail_group.example '<organization_id>','<group_id>'
+  terraform import awsworkmail_group.example organization_id,group_id
   ```
 - **Domain:**
   ```
-  terraform import awsworkmail_domain.example '<organization_id>','<domain>'
+  terraform import awsworkmail_domain.example organization_id,domain_name
   ```
 - **Organization:**
   ```
-  terraform import awsworkmail_organization.example '<organization_id>'
+  terraform import awsworkmail_organization.example organization_id
   ```
 
 See each resource's documentation for details and examples.
 
+## Provider Configuration
+
+The provider supports the following configuration options:
+
+| Argument | Description | Optional |
+|----------|-------------|----------|
+| `region` | AWS region for WorkMail operations. If not specified, uses standard AWS SDK configuration | Yes |
+| `endpoint` | Custom endpoint URL (for testing) | Yes |
+| `assume_role` | Configuration block for assuming an IAM role | Yes |
+
+### Assume Role Configuration
+
+The `assume_role` block supports:
+
+| Argument | Description | Optional |
+|----------|-------------|----------|
+| `role_arn` | ARN of the IAM role to assume | No |
+| `session_name` | Session name for the assumed role session | Yes |
+| `external_id` | External ID to use when assuming the role | Yes |
+| `duration_seconds` | Duration of the assumed role session (900-43200 seconds) | Yes |
+
 ## Limitations
 
-- The `awsworkmail_domain` resource is a stub for documentation. AWS SDK v2 does not support domain registration; you must add and verify domains manually in the AWS Console.
-- No data sources are currently available.
+- No data sources are currently available (except the user data source).
 
 ## Important Note on Group Creation
 

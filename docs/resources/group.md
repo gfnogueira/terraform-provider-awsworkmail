@@ -26,7 +26,7 @@ resource "awsworkmail_group" "example" {
 You can import an existing WorkMail group by providing both the Organization ID and the Group ID, separated by a comma:
 
 ```
-terraform import awsworkmail_group.example '<organization_id>','<group_id>'
+terraform import awsworkmail_group.example organization_id,group_id
 ```
 
 Example:
