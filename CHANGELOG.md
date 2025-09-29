@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-09-28
+
+### Added
+- Multi-Account Support: Complete `assume_role` functionality for cross-account deployments
+- Support for all AWS STS AssumeRole parameters: `role_arn`, `session_name`, `external_id`, `duration_seconds`
+- Enhanced domain resource with full lifecycle management (create, read, update, delete)
+- Comprehensive MX records support for DNS configuration
+- Unit tests for assume_role functionality
+- Multi-account configuration examples in documentation
+
+### Enhanced  
+- Domain resource now fully functional (upgraded from stub implementation)
+- Improved error handling and validation across all resources
+- Better AWS credential management with STS integration
+
+### Fixed
+- Import command format in documentation to follow Terraform standards
+- Corrected placeholder format in all import examples (removed problematic quotes)
+- Updated domain resource documentation to reflect full functionality
+- Fixed provider configuration schema for assume_role block
+
+### Documentation
+- Added comprehensive multi-account setup examples
+- Updated all resource documentation with correct import formats
+- Added assume_role configuration guide
+- Removed outdated "stub" references from domain resource docs
+
 ## [0.2.0] - 2025-08-09
 
 ### Added

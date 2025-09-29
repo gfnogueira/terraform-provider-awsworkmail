@@ -3,25 +3,57 @@
 page_title: "awsworkmail_domain Resource - awsworkmail"
 subcategory: ""
 description: |-
-  Registers a domain in an AWS WorkMail organization. (Note: AWS SDK v2 does not currently support domain registration. Manual configuration may be required.)
+  Registers and manages a domain in an AWS WorkMail organization, providing MX records for DNS configuration.
 ---
 
 # awsworkmail_domain (Resource)
 
-Registers a domain in an AWS WorkMail organization.
+Registers and manages a domain in an AWS WorkMail organization. This resource handles the complete lifecycle of WorkMail domains including registration, management, and cleanup.
 
-> **Important:** AWS SDK v2 does not currently support associating a domain with WorkMail. You must add and verify the domain manually in the AWS Console. This resource is a stub for documentation and outputs only.
+## Features
+
+- Registers domains with AWS WorkMail
+- Retrieves MX records for DNS configuration
+- Supports domain import for existing domains
+- Handles domain deregistration on resource deletion
 
 ## Example Usage
 
+### Basic Domain Registration
+
 ```hcl
+resource "awsworkmail_organization" "example" {
+  alias = "my-workmail-org"
+}
+
 resource "awsworkmail_domain" "example" {
   organization_id = awsworkmail_organization.example.id
   domain          = "mycompany.com"
 }
 
+# Output MX records for DNS configuration
 output "mx_records" {
-  value = awsworkmail_domain.example.mx_records
+  description = "MX records to configure in your DNS provider"
+  value       = awsworkmail_domain.example.mx_records
+}
+```
+
+### Complete Setup with DNS Records
+
+```hcl
+# WorkMail domain registration
+resource "awsworkmail_domain" "company" {
+  organization_id = awsworkmail_organization.main.id
+  domain          = "company.com"
+}
+
+# Example Route53 MX record configuration (if using Route53)
+resource "aws_route53_record" "mx" {
+  zone_id = aws_route53_zone.company.zone_id
+  name    = "company.com"
+  type    = "MX"
+  ttl     = 300
+  records = awsworkmail_domain.company.mx_records
 }
 ```
 
@@ -30,7 +62,7 @@ output "mx_records" {
 You can import a domain resource by providing both the Organization ID and the domain name, separated by a comma:
 
 ```
-terraform import awsworkmail_domain.example '<organization_id>','<domain>'
+terraform import awsworkmail_domain.example organization_id,domain_name
 ```
 
 Example:

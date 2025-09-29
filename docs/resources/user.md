@@ -29,7 +29,7 @@ resource "awsworkmail_user" "example" {
 You can import an existing WorkMail user by providing both the Organization ID and the User ID, separated by a comma:
 
 ```
-terraform import awsworkmail_user.example '<organization_id>','<user_id>'
+terraform import awsworkmail_user.example organization_id,user_id
 ```
 
 Example:
