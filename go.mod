@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.12
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.4
 	github.com/aws/aws-sdk-go-v2/service/workmail v1.36.4
-	github.com/hashicorp/terraform-plugin-framework v1.16.0
+	github.com/hashicorp/terraform-plugin-framework v1.16.1
 	github.com/hashicorp/terraform-plugin-go v0.29.0
 	github.com/hashicorp/terraform-plugin-testing v1.13.3
 )
