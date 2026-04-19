@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-18
+
+### Added
+- Provider-level `profile` configuration support for shared AWS credentials files
+
+### Enhanced
+- AWS SDK configuration logic to support dynamic option injection (Region and Profile)
+
 ## [0.3.0] - 2025-09-28
 
 ### Added

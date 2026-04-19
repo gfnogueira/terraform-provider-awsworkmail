@@ -35,6 +35,7 @@ type AwsWorkMailProviderModel struct {
 	Endpoint   types.String `tfsdk:"endpoint"`
 	Region     types.String `tfsdk:"region"`
 	AssumeRole types.Object `tfsdk:"assume_role"`
+	Profile    types.String `tfsdk:"profile"`
 }
 
 // AssumeRoleModel describes the assume_role configuration.
@@ -59,6 +60,10 @@ func (p *AwsWorkMailProvider) Schema(ctx context.Context, req provider.SchemaReq
 			},
 			"region": pschema.StringAttribute{
 				MarkdownDescription: "AWS region for WorkMail operations. If not specified, uses the standard AWS SDK configuration (environment variables, ~/.aws/config, etc.). WorkMail is only available in select regions.",
+				Optional:            true,
+			},
+			"profile": pschema.StringAttribute{
+				MarkdownDescription: "AWS profile used for connecting to AWS",
 				Optional:            true,
 			},
 			"assume_role": pschema.SingleNestedAttribute{
@@ -96,14 +101,20 @@ func (p *AwsWorkMailProvider) Configure(ctx context.Context, req provider.Config
 		return
 	}
 
+	// Handle profile if configured
+	var profileOpts []func(*config.LoadOptions) error
+	if !data.Profile.IsNull() && data.Profile.ValueString() != "" {
+		profileOpts = append(profileOpts, config.WithSharedConfigProfile(data.Profile.ValueString()))
+	}
+
 	// Create initial AWS config with optional region override
 	var cfg aws.Config
 	var err error
 
 	if !data.Region.IsNull() && data.Region.ValueString() != "" {
-		cfg, err = config.LoadDefaultConfig(ctx, config.WithRegion(data.Region.ValueString()))
+		cfg, err = config.LoadDefaultConfig(ctx, append(profileOpts, config.WithRegion(data.Region.ValueString()))...)
 	} else {
-		cfg, err = config.LoadDefaultConfig(ctx)
+		cfg, err = config.LoadDefaultConfig(ctx, profileOpts...)
 	}
 
 	if err != nil {
