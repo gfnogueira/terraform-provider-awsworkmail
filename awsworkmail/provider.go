@@ -101,11 +101,13 @@ func (p *AwsWorkMailProvider) Configure(ctx context.Context, req provider.Config
 		return
 	}
 
+	// Handle profile if configured
 	var profileOpts []func(*config.LoadOptions) error
 	if !data.Profile.IsNull() && data.Profile.ValueString() != "" {
 		profileOpts = append(profileOpts, config.WithSharedConfigProfile(data.Profile.ValueString()))
 	}
 
+	// Create initial AWS config with optional region override
 	var cfg aws.Config
 	var err error
 
